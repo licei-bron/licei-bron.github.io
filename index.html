@@ -520,7 +520,7 @@ function step2() {
   const freeHere = tables.filter(t => free.has(t.id));
   return `<div class="${fadeCls()}">
     <h2>Выберите стол</h2>
-    <p class="lead">${esc(dateShort(st.date))}, ${st.time} · ${guestsTxt(st.guests)}. Зелёным отмечены свободные столы для вашей компании.</p>
+    <p class="lead">${esc(dateShort(st.date))}, ${st.time} · ${guestsTxt(st.guests)}. Свободные столы для вашей компании подсвечены — нажмите на любой.</p>
     <button class="any ${st.table ? '' : 'on'}" data-act="any"><span class="radio"></span>
       <span><b>Любой подходящий стол</b><span>Подберём лучший вариант сами</span></span></button>
     ${ZONES.length > 1 ? `<div class="zones">${ZONES.map(z => `<button class="${z === st.zone ? 'on' : ''}" data-zone="${esc(z)}">${esc(z)}<small>${zoneCount(z)}</small></button>`).join('')}</div>` : ''}
