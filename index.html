@@ -132,6 +132,10 @@ a.linkbtn { white-space: nowrap; }
 .decor { position: absolute; transform: translate(-50%, -50%); display: grid; place-items: center; text-align: center; border-radius: 8px;
   background: repeating-linear-gradient(135deg, var(--line) 0 2px, transparent 2px 7px); color: var(--muted); font-size: 11px; font-weight: 700;
   letter-spacing: .04em; text-transform: uppercase; padding: 2px 4px; line-height: 1.15; pointer-events: none; }
+.prefnote { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 16px; margin-bottom: 16px;
+  background: var(--accent-soft); font-size: 14px; line-height: 1.45; color: var(--ink); }
+.prefnote .i { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font: 700 13px/1 Georgia, serif; font-style: italic; margin-top: 1px; }
 .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin: 12px 2px 0; }
 .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 4px; vertical-align: -1px; margin-right: 6px; }
 .tlist { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
@@ -176,7 +180,7 @@ a.linkbtn { white-space: nowrap; }
   background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-top: 1px solid var(--line); z-index: 5; }
 .bar .in { max-width: 720px; margin: 0 auto; display: flex; gap: 16px; align-items: center; }
-.bar .sum { flex: 1; min-width: 0; font-size: 14px; color: var(--muted); }
+.bar .sum { flex: 1; min-width: 0; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bar .sum b { display: block; color: var(--ink); font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .btn { height: 54px; padding: 0 28px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 16px;
   display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: background .15s, transform .1s, opacity .15s; white-space: nowrap; text-decoration: none; }
@@ -519,10 +523,11 @@ function step2() {
   const tables = C.tables.filter(t => t.zone === st.zone);
   const freeHere = tables.filter(t => free.has(t.id));
   return `<div class="${fadeCls()}">
-    <h2>Выберите стол</h2>
-    <p class="lead">${esc(dateShort(st.date))}, ${st.time} · ${guestsTxt(st.guests)}. Свободные столы для вашей компании подсвечены — нажмите на любой.</p>
+    <h2>Предпочитаемый стол</h2>
+    <p class="lead">${esc(dateShort(st.date))}, ${st.time} · ${guestsTxt(st.guests)}. Отметьте, где вам хотелось бы сидеть, — подсвечены столы, свободные для вашей компании.</p>
+    <div class="prefnote"><span class="i">i</span><span><b>Это пожелание, а не бронь конкретного стола.</b> Мы постараемся его учесть, но не можем гарантировать именно этот стол: хостес рассаживает гостей с учётом всех броней и проводит вас к столу, когда вы придёте.</span></div>
     <button class="any ${st.table ? '' : 'on'}" data-act="any"><span class="radio"></span>
-      <span><b>Любой подходящий стол</b><span>Подберём лучший вариант сами</span></span></button>
+      <span><b>Без предпочтений</b><span>Хостес подберёт удобный стол</span></span></button>
     ${ZONES.length > 1 ? `<div class="zones">${ZONES.map(z => `<button class="${z === st.zone ? 'on' : ''}" data-zone="${esc(z)}">${esc(z)}<small>${zoneCount(z)}</small></button>`).join('')}</div>` : ''}
     <div class="plan">
       ${ZONES.length > 1 ? `<span class="zone-name">${esc(st.zone)}</span>` : ''}
@@ -530,7 +535,7 @@ function step2() {
       ${tables.map(t => tableHtml(t, free.has(t.id), st.table === t.id)).join('')}
     </div>
     <div class="legend"><span><i style="background:var(--accent-soft);box-shadow:inset 0 0 0 1.5px var(--accent)"></i>Свободен</span>
-      <span><i style="background:var(--accent)"></i>Ваш выбор</span><span><i style="background:var(--busy)"></i>Занят или не подходит</span></div>
+      <span><i style="background:var(--accent)"></i>Ваше пожелание</span><span><i style="background:var(--busy)"></i>Занят или не подходит</span></div>
     ${freeHere.length ? `<div class="tlist">${freeHere.map(t => `<button class="chip ${st.table === t.id ? 'on' : ''}" data-table="${esc(t.id)}"><b>Стол ${esc(t.id)}</b>&nbsp;· до ${t.max} мест</button>`).join('')}</div>`
       : `<div class="note warn" style="margin-top:14px">В зоне «${esc(st.zone)}» на это время свободных столов нет${ZONES.length > 1 ? ' — посмотрите другую зону' : ''}.</div>`}
   </div>`;
@@ -545,7 +550,7 @@ function step3() {
     <div class="summary">
       <div class="big">${st.time}</div>
       <div class="info"><div><b>${esc(dateLong(st.date))}</b></div>
-        <div>${guestsTxt(st.guests)} · ${t ? 'стол ' + esc(t.id) + ', ' + esc(t.zone.toLowerCase()) : 'подберём стол'}</div></div>
+        <div>${guestsTxt(st.guests)} · ${t ? 'пожелание: стол ' + esc(t.id) : 'стол подберёт хостес'}</div></div>
       <button class="linkbtn" data-act="edit">Изменить</button>
     </div>
     <form id="form" novalidate autocomplete="on">
@@ -587,10 +592,10 @@ function doneHtml(v, title, text) {
         <div class="when">${esc(v.time)}<small>${esc(dateLong(v.date))}</small></div></div>
       <div class="t-grid">
         <div><span>Гостей</span><b>${v.guests}</b></div>
-        <div><span>Стол</span><b>${esc(v.table || '—')}</b></div>
-        <div><span>Зона</span><b>${esc(v.zone || '—')}</b></div>
+        <div style="grid-column:span 2"><span>Пожелание по столу</span><b>${v.pref ? 'Стол ' + esc(v.pref) : 'Без предпочтений'}</b></div>
       </div>
     </div>
+    ${active ? `<p class="small" style="margin:-8px auto 18px">Стол подтвердит хостес, когда вы придёте${v.pref ? ' — постараемся посадить вас за выбранный' : ''}.</p>` : ''}
     ${tgBox}
     <div class="actions">
       ${active ? `<a class="btn ghost" href="${calUrl(v)}" target="_blank" rel="noopener">${ICON.cal} В календарь</a>
@@ -646,7 +651,7 @@ function calUrl(v) {
   const q = new URLSearchParams({
     action: 'TEMPLATE', text: 'Стол в «' + (v.restaurant || C.name) + '»',
     dates: d + 'T' + v.time.replace(':', '') + '00/' + endDate + 'T' + v.end.replace(':', '') + '00',
-    ctz: 'Europe/Moscow', details: 'Бронь №' + v.id + ', ' + guestsTxt(v.guests) + (v.table ? ', стол ' + v.table : '') + '\n' + v.manageUrl,
+    ctz: 'Europe/Moscow', details: 'Бронь №' + v.id + ', ' + guestsTxt(v.guests) + (v.pref ? ', пожелание: стол ' + v.pref : '') + '\n' + v.manageUrl,
     location: v.address || '',
   });
   return 'https://calendar.google.com/calendar/render?' + q.toString();
@@ -658,10 +663,10 @@ function barHtml() {
     sum = st.time ? `<b>${esc(dateShort(st.date))}, ${st.time}</b>${guestsTxt(st.guests)}` : `<b>${st.date ? esc(dateShort(st.date)) : '—'}</b>Выберите время`;
     btn = `<button class="btn" data-act="next" ${st.time ? '' : 'disabled'}>Выбрать стол ${ICON.next}</button>`;
   } else if (st.step === 2) {
-    sum = `<b>${st.table ? 'Стол ' + esc(st.table) : 'Любой стол'}</b>${esc(dateShort(st.date))}, ${st.time} · ${guestsTxt(st.guests)}`;
+    sum = `<b>${st.table ? 'Пожелание: стол ' + esc(st.table) : 'Без предпочтений'}</b>${esc(dateShort(st.date))}, ${st.time} · ${guestsTxt(st.guests)}`;
     btn = `<button class="btn" data-act="next">Далее ${ICON.next}</button>`;
   } else if (st.step === 3) {
-    sum = `<b>${esc(dateShort(st.date))}, ${st.time}</b>${guestsTxt(st.guests)}${st.table ? ' · стол ' + esc(st.table) : ''}`;
+    sum = `<b>${esc(dateShort(st.date))}, ${st.time}</b>${guestsTxt(st.guests)}${st.table ? ' · пожелание: стол ' + esc(st.table) : ''}`;
     btn = `<button class="btn" data-act="submit" ${st.sending ? 'disabled' : ''}>${st.sending ? '<span class="spin"></span> Бронируем…' : 'Забронировать'}</button>`;
   } else return '';
   return `<div class="bar"><div class="in"><div class="sum">${sum}</div>${btn}</div></div>`;

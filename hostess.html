@@ -496,6 +496,8 @@ function zones() {
 function bookTags(b) {
   let out = '';
   if (b.status === ST.REJECT && b.reason) out += `<span class="tag warn">${esc(b.reason)}</span>`;
+  if (b.pref) out += b.pref === b.table ? `<span class="tag">просил стол ${esc(b.pref)}</span>`
+    : `<span class="tag warn">просил стол ${esc(b.pref)}</span>`;
   if (b.answer === 'Придёт') out += '<span class="tag ok">✓ подтвердил визит</span>';
   else if (b.answer === 'Не придёт') out += '<span class="tag warn">✕ не придёт</span>';
   else if (b.answer === 'Запрошено') out += isStarted(b) ? '<span class="tag warn">нет ответа</span>' : '<span class="tag">⏳ ждём ответ</span>';
@@ -836,7 +838,7 @@ function bookingDrawer(keepScroll) {
       </div>
       <div class="grid2">
         <label class="fld"><span>Гостей</span><div class="stepper"><button type="button" data-act="g-">−</button><input id="e-guests" type="number" min="1" max="200" value="${b.guests}"><button type="button" data-act="g+">+</button></div></label>
-        <label class="fld"><span>Стол</span><select id="e-table"><option value="">— без стола —</option>
+        <label class="fld"><span>Стол${b.pref ? ` · <b style="color:var(--accent)">гость просил ${esc(b.pref)}</b>` : ''}</span><select id="e-table"><option value="">— без стола —</option>
           ${zs.map(zn => `<optgroup label="${esc(zn)}">${d.tables.filter(t => t.zone === zn).map(t => {
             const x = busy[t.id];
             return `<option value="${esc(t.id)}" ${t.id === b.table ? 'selected' : ''}>Стол ${esc(t.id)} · ${t.min === t.max ? t.max : t.min + '–' + t.max} м.${x ? ' · занят ' + x.time + ' ' + x.name : fits(t) ? '' : ' · не по размеру'}</option>`;
