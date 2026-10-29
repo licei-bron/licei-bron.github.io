@@ -82,6 +82,15 @@ h2 { font: 600 40px/1.05 var(--serif); margin: 0 0 6px; letter-spacing: -.01em; 
 .date.weekend:not(.on) .wd { color: var(--warm); }
 .date:disabled { background: transparent; border-style: dashed; color: var(--busy-ink); }
 .date:disabled .wd, .date:disabled .mo { color: var(--busy-ink); }
+.date.phone:not(.on) { background: transparent; border-style: dashed; }
+.terms { padding: 18px 20px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); }
+.terms b { display: block; font: 600 20px/1.25 var(--serif); margin-bottom: 8px; }
+.terms p { margin: 0 0 6px; white-space: pre-line; }
+.terms .contacts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.terms .cbtn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 18px; border-radius: 999px; font-weight: 600;
+  text-decoration: none; background: var(--accent); color: var(--accent-ink); }
+.terms .cbtn:hover { background: var(--accent-hover); }
+.terms .cbtn.alt { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); }
 
 .note { padding: 12px 16px; border-radius: 14px; background: var(--accent-soft); color: var(--ink); font-size: 14px; margin-bottom: 16px; }
 .note.warn { background: color-mix(in srgb, var(--warm) 14%, transparent); }
@@ -284,6 +293,7 @@ const ICON = {
   next: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   pin: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0114 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>',
   clock: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  tg: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21.9 4.6l-3.1 14.6c-.2 1-.8 1.3-1.7.8l-4.7-3.5-2.3 2.2c-.3.3-.5.5-1 .5l.3-4.8 8.8-7.9c.4-.3-.1-.5-.6-.2L6.7 13.1 2 11.6c-1-.3-1-1 .2-1.5l18.4-7.1c.9-.3 1.6.2 1.3 1.6z"/></svg>',
   phone: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a2 2 0 01-2 2A16 16 0 013 6a2 2 0 012-2z"/></svg>',
   check: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   cross: '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></svg>',
@@ -364,8 +374,10 @@ function slotKey() { return st.date + '|' + st.guests; }
 function curSlots() { return st.slots[slotKey()]; }
 function curSlot() { const s = curSlots(); return s && s.slots ? s.slots.find(x => x.time === st.time) : null; }
 
+function phoneOnlyDay(date) { const d = C.dates.find(x => x.date === date); return !!(d && d.phoneOnly); }
+
 function loadSlots(force) {
-  if (!st.date) return;
+  if (!st.date || phoneOnlyDay(st.date)) return;
   const key = slotKey();
   if (!force && st.slots[key] && st.slots[key] !== 'error') return;
   st.slots[key] = 'loading';
@@ -391,6 +403,10 @@ function step1() {
   let times;
   if (!st.date) {
     times = `<div class="empty"><b>Онлайн-бронь пока закрыта</b>${C.phone ? 'Позвоните нам: ' + esc(C.phone) : ''}</div>`;
+  } else if (phoneOnlyDay(st.date)) {
+    times = `<div class="terms"><b>Бронь только по телефону</b>${C.phoneTerms ? `<p>${esc(C.phoneTerms)}</p>` : ''}<div class="contacts">${C.phone
+      ? `<a class="cbtn" href="tel:${esc(C.phone.replace(/[^\d+]/g, ''))}">${ICON.phone} ${esc(C.phone)}</a>` : ''}${C.tgChat
+      ? `<a class="cbtn alt" href="https://t.me/${esc(C.tgChat)}" target="_blank" rel="noopener">${ICON.tg} Написать в Telegram</a>` : ''}</div></div>`;
   } else if (!s || s === 'loading') {
     times = `<div class="slots">${'<div class="skeleton"></div>'.repeat(12)}</div>`;
   } else if (s === 'error') {
@@ -420,7 +436,7 @@ function step1() {
       <div class="label">Дата <span class="hint">${st.date ? esc(dateLong(st.date)) : ''}</span></div>
       <div class="dates" id="dates">${C.dates.map(d => {
         const p = parts(d.date), w = wdOf(d.date);
-        return `<button class="date ${d.date === st.date ? 'on' : ''} ${w >= 5 ? 'weekend' : ''}" data-date="${d.date}" ${d.open ? '' : 'disabled title="Нет свободного времени"'}>
+        return `<button class="date ${d.date === st.date ? 'on' : ''} ${w >= 5 ? 'weekend' : ''} ${d.phoneOnly ? 'phone' : ''}" data-date="${d.date}" ${d.open ? '' : d.phoneOnly ? 'title="Только по телефону"' : 'disabled title="Нет свободного времени"'}>
           <span class="wd">${relDay(d.date) || WD[w]}</span><span class="dn">${p.d}</span><span class="mo">${MON_S[p.m - 1]}</span></button>`;
       }).join('')}</div>
     </div>
@@ -559,7 +575,7 @@ function step3() {
         <div class="field ${e.phone ? 'bad' : ''}"><input id="f-phone" name="phone" type="tel" inputmode="tel" placeholder=" " autocomplete="tel" value="${esc(f.phone)}"><label for="f-phone">Телефон</label>${e.phone ? `<div class="err">${esc(e.phone)}</div>` : ''}</div>
       </div>
       ${C.bot ? `<div class="field ${e.tg ? 'bad' : ''}"><input id="f-tg" name="tg" placeholder=" " autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="45" value="${esc(f.tg)}" ${f.noTg ? 'disabled' : ''}><label for="f-tg">Telegram, @username</label>${e.tg ? `<div class="err">${esc(e.tg)}</div>` : ''}</div>
-      <div class="hintline">Бот пришлёт подтверждение, а за ${C.remindH || 2} ч до визита спросит, всё ли в силе.</div>
+      <div class="hintline">Бот пришлёт подтверждение, а за ${C.remindH || 1} ч до визита спросит, всё ли в силе.</div>
       <label class="consent" style="margin:-4px 0 18px"><input type="checkbox" id="f-notg" ${f.noTg ? 'checked' : ''}><span>У меня нет username — подключу Telegram кнопкой после брони</span></label>` : ''}
       <div class="label" style="margin-top:8px">Повод <span class="hint">необязательно</span></div>
       <div class="occasions">${OCCASIONS.map(o => `<button type="button" class="chip ${f.occasion === o ? 'on' : ''}" data-occasion="${esc(o)}">${esc(o)}</button>`).join('')}</div>
@@ -613,7 +629,7 @@ function doneTexts(v, manage) {
   const phone = C.phone ? ` или позвоните нам: <a class="linkbtn" href="tel:${esc(C.phone.replace(/[^\d+]/g, ''))}">${esc(C.phone)}</a>` : '';
   switch (v.status) {
     case 'Новая': return [manage ? 'Ваша заявка' : 'Заявка отправлена!', 'Ресторан подтвердит бронь в ближайшее время' + (v.tgConnected ? ' — ответ придёт в Telegram.' : '. Подключите Telegram, чтобы получить ответ.')];
-    case 'Принята': return ['Ждём вас, ' + esc(v.name) + '!', 'Бронь подтверждена. За ' + (C.remindH || 2) + ' ч до визита напомним в Telegram.'];
+    case 'Принята': return ['Ждём вас, ' + esc(v.name) + '!', 'Бронь подтверждена. За ' + (C.remindH || 1) + ' ч до визита напомним в Telegram.'];
     case 'Отклонена': return ['Бронь не принята', 'К сожалению, ресторан не может принять бронь' + (v.reason ? ': ' + esc(v.reason) : '') + '. Выберите другое время' + phone + '.'];
     case 'Отменена': return ['Бронь отменена', 'Будем рады видеть вас в другой раз.'];
     default: return ['Ваша бронь', 'Статус: ' + esc(v.status)];

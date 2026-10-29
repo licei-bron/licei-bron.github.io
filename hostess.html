@@ -466,7 +466,8 @@ function renderTop() {
   }).join('');
   [...$('#tabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
   $('#daynote').innerHTML = !d.hours ? `<div class="daynote">По графику ресторан в этот день закрыт для онлайн-брони${d.note ? ': ' + esc(d.note) : ''}. Вручную бронировать можно.</div>`
-    : d.note ? `<div class="daynote">${esc(d.note)}</div>` : '';
+    : (d.note ? `<div class="daynote">${esc(d.note)}</div>` : '') +
+      (d.phoneTerms ? `<div class="daynote" style="white-space:pre-line"><b>Онлайн-бронь закрыта, только по телефону.</b> Условия для гостей:\n${esc(d.phoneTerms)}</div>` : '');
 }
 
 function visible() {
