@@ -85,6 +85,12 @@ button:disabled { opacity: .45; cursor: default; }
 .legend i { width: 10px; height: 10px; border-radius: 3px; }
 .toggle { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); cursor: pointer; user-select: none; }
 .toggle input { accent-color: var(--accent); }
+.stops { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.stops .sc { display: inline-flex; gap: 6px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 99px; padding: 3px 4px 3px 10px; font-weight: 700; }
+.stops .sc button { width: 22px; height: 22px; border-radius: 50%; background: var(--line-2); font-weight: 800; line-height: 1; }
+.loaderr { max-width: 460px; margin: 40px auto; text-align: center; }
+.loaderr b { display: block; font: 600 24px var(--serif); margin-bottom: 6px; }
+.loaderr p { color: var(--muted); margin: 0 0 14px; word-break: break-word; }
 .daynote { margin: 0 20px 8px; padding: 9px 14px; border-radius: 11px; background: var(--s-new-bg); color: var(--ink); font-size: 13px; }
 
 .view { flex: 1; min-height: 0; overflow: auto; padding: 0 20px 20px; position: relative; }
@@ -333,6 +339,7 @@ button:disabled { opacity: .45; cursor: default; }
     <button data-tab="timeline">Таймлайн</button><button data-tab="floor">Схема зала</button><button data-tab="list">Список</button><button data-tab="guests">Гости</button><button data-tab="wait">Лист ожидания <span class="wcnt" id="wcnt" hidden></span></button>
   </div>
   <label class="toggle"><input type="checkbox" id="showCancel"> отменённые и отклонённые</label>
+  <button class="btn ghost sm" data-act="stop-new" title="Закрыть время для онлайн-брони">⛔ Стоп онлайн-брони</button>
   <div class="spacer"></div>
   <div class="legend">
     <span><i style="background:var(--s-new)"></i>Новая</span><span><i style="background:var(--s-ok)"></i>Принята</span>
@@ -378,9 +385,14 @@ const ICON = {
 const API = window.BOOKING_API || '';
 function call(fn, ...args) {
   if (API) {
-    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args: [KEY].concat(args) }) })
-      .then(r => r.json())
-      .then(r => { if (r.error) throw new Error(r.error); return r.result; });
+    // сервер Google отвечает за 3–10 с; на мобильной сети ждём до 40 с, потом — понятная ошибка вместо вечной загрузки
+    const ctl = window.AbortController ? new AbortController() : null;
+    const timer = ctl && setTimeout(() => ctl.abort(), 40000);
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ fn, args: [KEY].concat(args) }), signal: ctl ? ctl.signal : undefined })
+      .then(r => { if (!r.ok) throw new Error('сервер ответил ' + r.status); return r.text(); })
+      .then(t => { let r; try { r = JSON.parse(t); } catch (e) { throw new Error('сервер вернул не данные, а страницу — попробуйте ещё раз'); } if (r.error) throw new Error(r.error); return r.result; })
+      .catch(e => { throw e.name === 'AbortError' ? new Error('сервер не ответил за 40 секунд — проверьте интернет') : e; })
+      .finally(() => timer && clearTimeout(timer));
   }
   return new Promise((resolve, reject) => {
     google.script.run.withSuccessHandler(resolve)
@@ -462,7 +474,13 @@ function loadDay(silent) {
     if (first) scrollTimelineToNow();
     if (S.openId) { const id = S.openId; S.openId = ''; openBooking(id); }
   }).catch(err => {
-    if (!silent) { setBusy(false); toast('Не загрузилось', err.message); }
+    if (!silent) setBusy(false);
+    if (!S.data) {
+      S.loadErr = (S.loadErr || 0) + 1;
+      $('#view').innerHTML = `<div class="loaderr"><b>Не удалось загрузить брони</b><p>${esc(err.message || err)}</p>
+        <button class="btn" data-act="reload">Повторить</button></div>`;
+      if (S.loadErr < 3) setTimeout(() => { if (!S.data) loadDay(); }, 3000); // две автоматические попытки
+    } else if (!silent) toast('Не загрузилось', err.message);
   });
 }
 
@@ -494,7 +512,8 @@ function renderTop() {
   $('#wcnt').textContent = nWait; $('#wcnt').hidden = !nWait;
   $('#daynote').innerHTML = !d.hours ? `<div class="daynote">По графику ресторан в этот день закрыт для онлайн-брони${d.note ? ': ' + esc(d.note) : ''}. Вручную бронировать можно.</div>`
     : (d.note ? `<div class="daynote">${esc(d.note)}</div>` : '') +
-      (d.phoneTerms ? `<div class="daynote" style="white-space:pre-line"><b>Онлайн-бронь закрыта, только по телефону.</b> Условия для гостей:\n${esc(d.phoneTerms)}</div>` : '');
+      (d.phoneTerms ? `<div class="daynote" style="white-space:pre-line"><b>Онлайн-бронь закрыта, только по телефону.</b> Условия для гостей:\n${esc(d.phoneTerms)}</div>` : '') +
+      ((d.stops || []).length ? `<div class="daynote stops"><b>Стоп онлайн-брони:</b>${d.stops.map(x => `<span class="sc" title="${esc(x.comment)}">${esc(x.time)}${x.comment ? ' · ' + esc(x.comment) : ''}<button data-stopdel="${esc(x.id)}" aria-label="Открыть время">×</button></span>`).join('')}</div>` : '');
 }
 
 function visible() {
@@ -924,7 +943,7 @@ function renderDrawer(keepScroll) {
   if (!S.drawer) { el.classList.remove('on'); $('#scrim').classList.remove('on'); el.setAttribute('aria-hidden', 'true'); return; }
   const db = $('#db');
   const top = db ? db.scrollTop : 0;
-  el.innerHTML = S.drawer.kind === 'table' ? tableDrawer() : S.drawer.kind === 'guest' ? guestDrawer() : S.drawer.kind === 'wait' ? waitDrawer() : bookingDrawer();
+  el.innerHTML = S.drawer.kind === 'table' ? tableDrawer() : S.drawer.kind === 'guest' ? guestDrawer() : S.drawer.kind === 'wait' ? waitDrawer() : S.drawer.kind === 'stop' ? stopDrawer() : bookingDrawer();
   el.classList.add('on');
   el.setAttribute('aria-hidden', 'false');
   $('#scrim').classList.add('on');
@@ -1158,10 +1177,52 @@ document.addEventListener('input', e => {
   f[e.target.id.slice(2)] = e.target.value;
 });
 
+// ---------- стоп онлайн-брони ----------
+
+function stopDrawer() {
+  const d = S.data, dr = S.drawer;
+  const open = d.hours ? d.hours.open : 8 * 60, close = d.hours ? d.hours.close : 23 * 60;
+  const opts = [];
+  for (let t = open; t <= close; t += 30) opts.push(t);
+  const sel = (id, cur) => `<select id="${id}">${opts.map(t => `<option value="${hm(t)}" ${t === cur ? 'selected' : ''}>${hm(t)}</option>`).join('')}</select>`;
+  return `
+    <div class="dh"><div style="flex:1"><h2>Стоп онлайн-брони</h2><div class="sub">${esc(dateLong(d.date))}</div></div>
+      <button class="ibtn" data-act="close" aria-label="Закрыть">${ICON.close}</button></div>
+    <div class="db" id="db">
+      <p style="margin:0 0 14px;color:var(--muted)">Гости на сайте не увидят это время. Вы по-прежнему можете вносить брони вручную.</p>
+      <div class="grid2"><label class="fld"><span>С</span>${sel('s-from', dr.from)}</label><label class="fld"><span>До</span>${sel('s-to', dr.to)}</label></div>
+      <label class="fld"><span>Комментарий для хостес</span><input id="s-comment" maxlength="100" placeholder="банкет, полная посадка…"></label>
+      <div class="sactions"><button class="sbtn primary" data-act="stop-save" ${dr.saving ? 'disabled' : ''}>Закрыть это время</button></div>
+      ${(d.stops || []).length ? `<div class="hist"><h4>Уже закрыто</h4>${d.stops.map(x => `<div class="tbook"><div class="t">${esc(x.time)}</div>
+        <div class="n">${esc(x.comment || '')}</div><button class="btn ghost sm" data-stopdel="${esc(x.id)}">Открыть</button></div>`).join('')}</div>` : ''}
+    </div>`;
+}
+
+function openStop() {
+  const d = S.data, step = 30;
+  const base = d.date === d.today ? Math.ceil(d.now / step) * step : 18 * 60;
+  const from = Math.max(d.hours ? d.hours.open : 8 * 60, Math.min(base, (d.hours ? d.hours.close : 23 * 60) - 60));
+  S.drawer = { kind: 'stop', from, to: from + 60 };
+  renderDrawer();
+}
+
+function stopOp(op, data) {
+  setBusy(true);
+  return call('hostStop', op, data).then(res => {
+    setBusy(false);
+    S.data.stops = res.stops;
+    renderAll();
+    toast(op === 'add' ? 'Время закрыто для онлайн-брони' : 'Время снова открыто', op === 'add' ? data.from + '–' + data.to : '');
+    return res;
+  }).catch(err => { setBusy(false); toast('Не получилось', err.message); });
+}
+
 // ---------- события ----------
 
 document.addEventListener('click', e => {
   const t = e.target;
+  const sd = t.closest('[data-stopdel]');
+  if (sd) { e.stopPropagation(); if (confirm('Снова открыть это время для онлайн-брони?')) stopOp('del', { id: sd.dataset.stopdel }).then(() => { if (S.drawer && S.drawer.kind === 'stop') renderDrawer(true); }); return; }
   const wp = t.closest('[data-wpick]');
   if (wp) { openWaitPick(wp.dataset.wpick); return; }
   const wo = t.closest('[data-wop]');
@@ -1222,6 +1283,15 @@ document.addEventListener('click', e => {
     case 'new': newBooking(); break;
     case 'theme': { const th = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = th; store.set('theme', th); break; }
     case 'close': closeDrawer(); break;
+    case 'reload': $('#view').innerHTML = '<div class="empty"><b>Загружаем брони…</b></div>'; S.loadErr = 0; loadDay(); break;
+    case 'stop-new': if (S.data) openStop(); break;
+    case 'stop-save': {
+      const dr = S.drawer, data = { date: S.data.date, from: $('#s-from').value, to: $('#s-to').value, comment: $('#s-comment').value.trim() };
+      if (mins(data.to) <= mins(data.from)) { toast('Время «до» должно быть позже, чем «с»'); break; }
+      dr.saving = true; renderDrawer(true);
+      stopOp('add', data).then(res => { if (res) closeDrawer(); else { dr.saving = false; renderDrawer(true); } });
+      break;
+    }
     case 'wseat': { const dr = S.drawer; if (!dr.table) break; dr.saving = true; renderDrawer(true);
       waitOp('seat', { id: dr.w.id, table: dr.table }).then(() => { if (S.drawer === dr) { dr.saving = false; renderDrawer(true); } }); break; }
     case 'copylink': {
@@ -1322,6 +1392,7 @@ setInterval(() => {
 }, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S.data) loadDay(true); });
 
+$('#view').innerHTML = '<div class="empty"><b>Загружаем брони…</b>Первый раз это может занять до 10 секунд</div>';
 loadDay();
 if (S.tab === 'guests') loadGuests();
 </script>
