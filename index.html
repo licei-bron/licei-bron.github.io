@@ -371,16 +371,41 @@ function stepsHtml() {
 }
 
 function slotKey() { return st.date + '|' + st.guests; }
-function curSlots() { return st.slots[slotKey()]; }
+function curSlots() {
+  const key = slotKey();
+  if (!st.slots[key] && st.date) { const pre = preSlots(st.date, st.guests); if (pre) st.slots[key] = pre; }
+  return st.slots[key];
+}
 function curSlot() { const s = curSlots(); return s && s.slots ? s.slots.find(x => x.time === st.time) : null; }
 
 function phoneOnlyDay(date) { const d = C.dates.find(x => x.date === date); return !!(d && d.phoneOnly); }
 
+/** Свободные столы из ответа при открытии страницы (на 14 дней вперёд) — время видно сразу, без ожидания сервера. */
+const BOOT_AT = Date.now();
+function preSlots(date, guests) {
+  const raw = C.avail && C.avail[date];
+  if (raw === undefined) return null;
+  const fit = {};
+  C.tables.forEach(t => { fit[t.id] = guests >= t.min && guests <= t.max; });
+  const d = C.dates.find(x => x.date === date);
+  return {
+    date, note: d ? d.note : '', pre: true,
+    slots: raw ? raw.split(';').map(x => { const [time, ids] = x.split('='); return { time, free: ids ? ids.split(',').filter(id => fit[id]) : [] }; }) : [],
+  };
+}
+
 function loadSlots(force) {
   if (!st.date || phoneOnlyDay(st.date)) return;
   const key = slotKey();
-  if (!force && st.slots[key] && st.slots[key] !== 'error') return;
-  st.slots[key] = 'loading';
+  if (!force && st.slots[key] && st.slots[key] !== 'error' && st.slots[key] !== 'loading' && !st.slots[key].pre) return;
+  if (!force && st.slots[key] === 'loading') return;
+  if (!force) curSlots();
+  // данные со страницы свежие (до 3 минут) — второй запрос не нужен; старше — показываем их и тихо обновляем
+  const cur = st.slots[key];
+  if (cur && cur.pre && Date.now() - BOOT_AT < 3 * 60000) return;
+  const bg = !!(cur && cur.slots); // уже есть что показать — обновляем без серых плашек
+  if (cur && cur.pre) cur.pre = false;
+  if (!bg) st.slots[key] = 'loading';
   call('guestSlots', st.date, st.guests).then(res => {
     st.slots[key] = res;
     if (key === slotKey()) {
@@ -390,6 +415,7 @@ function loadSlots(force) {
       render();
     }
   }).catch(err => {
+    if (bg) return; // показываем прежние данные; бронь всё равно проверит сервер при отправке
     st.slots[key] = 'error';
     if (key === slotKey()) { render(); toast(err.message); }
   });
