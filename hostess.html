@@ -1506,13 +1506,28 @@ window.BOOKING_API = 'https://script.google.com/macros/s/AKfycbwItXTjwO1YLe_Ii2H
 (function () {
   var q = new URLSearchParams(location.search), url = window.BOOKING_API + '?api=hostboot';
   ['b', 'key', 'date', 'id'].forEach(function (k) { if (q.get(k)) url += '&' + k + '=' + encodeURIComponent(q.get(k)); });
-  fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-    if (j.error) throw new Error(j.error);
-    window.__BOOT__ = j.result;
+  var started = false, mode = 'hostboot', cached = null;
+  function run(boot) {
+    if (started) return;
+    started = true;
+    window.__BOOT__ = boot;
     var s = document.createElement('script');
     s.textContent = document.getElementById('main-js').textContent;
     document.body.appendChild(s);
+  }
+  // экран хостес: ключ уже проверялся на этом устройстве — запускаем сразу, проверка идёт параллельно
+  if (mode === 'hostboot') {
+    try { cached = JSON.parse(localStorage.getItem('hostess-boot') || 'null'); } catch (e) { cached = null; }
+    if (cached && cached.key && cached.key === q.get('key')) run({ key: cached.key, name: cached.name, date: q.get('date') || '', id: q.get('id') || '' });
+  }
+  fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+    if (j.error) throw new Error(j.error);
+    if (mode === 'hostboot') { try { localStorage.setItem('hostess-boot', JSON.stringify({ key: j.result.key, name: j.result.name })); } catch (e) { /* без хранилища */ } }
+    run(j.result);
   }).catch(function (e) {
+    var denied = /доступ/i.test(String(e.message || e));
+    if (denied) { try { localStorage.removeItem('hostess-boot'); localStorage.removeItem('hostess-days'); } catch (x) { /* ничего */ } }
+    if (started && !denied) return; // экран уже работает — свои запросы он повторит сам
     document.body.innerHTML = '<div style="padding:48px 20px;font:16px/1.5 system-ui,sans-serif;text-align:center;color:#333">' +
       '<b>Не удалось загрузить страницу</b><br>' + String(e.message || e).replace(/</g, '&lt;') +
       '<br><br>Обновите страницу через минуту.</div>';
