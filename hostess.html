@@ -214,6 +214,7 @@ button:disabled { opacity: .45; cursor: default; }
 .wadd { display: grid; grid-template-columns: minmax(140px, 1.3fr) 110px minmax(140px, 1fr) minmax(140px, 1.3fr) auto; gap: 10px; align-items: end;
   background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; max-width: 1100px; }
 .wadd .fld { margin: 0; }
+.wadd.fut { grid-template-columns: minmax(140px, 1.3fr) 90px minmax(140px, 1fr) 100px minmax(140px, 1.3fr) auto; }
 .wrow { display: grid; grid-template-columns: 34px minmax(140px, 1.4fr) 90px 110px minmax(100px, 1fr) auto; gap: 14px; align-items: center;
   background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
 .wrow .no { width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-weight: 800; display: flex; align-items: center; justify-content: center; }
@@ -223,6 +224,20 @@ button:disabled { opacity: .45; cursor: default; }
 .wrow .m { color: var(--muted); font-size: 13px; } .wrow .m b { color: var(--ink); font-size: 15px; }
 .wrow .wt b { font-size: 15px; } .wrow .wt.long b { color: var(--s-no); }
 .wrow .qa { display: flex; gap: 6px; justify-content: flex-end; align-items: center; }
+.wrow { grid-template-columns: 34px minmax(140px, 1.2fr) 80px 110px minmax(150px, 1.2fr) 172px auto; }
+.wrow .wnote { width: 100%; height: 34px; border: 1px dashed var(--line); border-radius: 9px; padding: 0 9px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; }
+.wrow .wnote:focus { border-style: solid; border-color: var(--accent); outline: none; background: var(--surface); }
+.callsel { height: 34px; border: 1px solid var(--line); border-radius: 9px; padding: 0 6px; font: inherit; font-size: 12.5px; font-weight: 700; background: var(--surface); color: var(--muted); max-width: 100%; }
+.callsel.c-ok { background: var(--s-ok-bg); color: var(--s-ok); border-color: transparent; }
+.callsel.c-no { background: var(--s-rej-bg); color: var(--s-rej); border-color: transparent; }
+.callsel.c-inv { background: var(--s-in-bg, #e3e8ff); color: var(--s-in, #3047c9); border-color: transparent; }
+.callsel.c-again { background: var(--s-new-bg); color: var(--s-new); border-color: transparent; }
+.calltime { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+.bcallrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.bcallrow .calltime { display: inline; margin: 0; }
+.lcall { display: inline-flex; flex-direction: column; align-items: flex-end; margin-right: 4px; }
+.wday .wq { font-size: 10.5px; font-weight: 800; color: var(--accent); margin-top: 1px; white-space: nowrap; }
+.wday.on .wq { color: var(--accent-ink); }
 .wcnt { background: var(--accent); color: var(--accent-ink); border-radius: 99px; font-size: 11px; padding: 0 6px; line-height: 17px; min-width: 17px; text-align: center; }
 .tpick { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; margin-bottom: 14px; }
 .tpick button { text-align: left; border: 1px solid var(--line); border-radius: 12px; padding: 9px 11px; background: var(--surface); }
@@ -232,9 +247,9 @@ button:disabled { opacity: .45; cursor: default; }
 .tpick button.warn span { color: var(--s-new); }
 .tpick button:disabled { opacity: .45; cursor: default; }
 @media (max-width: 760px) {
-  .wadd { grid-template-columns: 1fr 1fr; } .wadd .wide { grid-column: 1 / -1; }
-  .wrow { grid-template-columns: 30px 1fr auto; gap: 8px 10px; } .wrow .m, .wrow .wt { grid-column: 2; } .wrow .tags { grid-column: 2 / -1; }
-  .wrow .qa { grid-column: 1 / -1; }
+  .wadd, .wadd.fut { grid-template-columns: 1fr 1fr; } .wadd .wide { grid-column: 1 / -1; }
+  .wrow { grid-template-columns: 30px 1fr 1fr; gap: 8px 10px; } .wrow .m { grid-column: 2; } .wrow .wt { grid-column: 3; }
+  .wrow .tags { grid-column: 2 / -1; } .wrow .wc { grid-column: 2 / -1; } .wrow .qa { grid-column: 1 / -1; }
 }
 .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
 .empty b { display: block; font: 600 26px var(--serif); color: var(--ink); margin-bottom: 4px; }
@@ -551,10 +566,10 @@ function renderTop() {
     const p = parts(w.date);
     return `<button class="wday ${w.date === d.date ? 'on' : ''} ${w.date === d.today ? 'today' : ''} ${w.date < d.today ? 'past' : ''}" data-date="${w.date}">
       <div class="w">${w.date === d.today ? 'сегодня' : WD[w.wd - 1]}</div><div class="n">${p.d}</div>
-      <div class="c">${w.count ? `<b>${w.count}</b> · ${w.guests} ${ICON.user}` : '—'}</div></button>`;
+      <div class="c">${w.count ? `<b>${w.count}</b> · ${w.guests} ${ICON.user}` : '—'}</div>${w.wait ? `<div class="wq">ждут ${w.wait}</div>` : ''}</button>`;
   }).join('');
   [...$('#tabs').children].forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
-  const nWait = waiting().length;
+  const nWait = S.data.date >= S.data.today ? (S.data.wait || []).filter(w => w.status === 'Ждёт').length : 0;
   $('#wcnt').textContent = nWait; $('#wcnt').hidden = !nWait;
   $('#daynote').innerHTML = !d.hours ? `<div class="daynote">По графику ресторан в этот день закрыт для онлайн-брони${d.note ? ': ' + esc(d.note) : ''}. Вручную бронировать можно.</div>`
     : (d.note ? `<div class="daynote">${esc(d.note)}</div>` : '') +
@@ -796,7 +811,7 @@ function renderList() {
         <div class="m"><b>${b.guests}</b> ${plural(b.guests, 'гость', 'гостя', 'гостей')}</div>
         <div class="m">${b.table ? `стол <b>${esc(b.table)}</b>` : '<span style="color:var(--s-no)">без стола</span>'}</div>
         <div class="tags">${bookTags(b)}${guestTags(b.phone)}${b.occasion ? `<span class="tag">🎉 ${esc(b.occasion)}</span>` : ''}${esc(b.wish || '')}</div>
-        <div class="qa"><span class="pill ${ST_CLS[b.status]}">${esc(b.status)}</span>${quickBtn(b)}</div>
+        <div class="qa">${b.status === ST.NEW || b.status === ST.OK || b.call ? `<span class="lcall">${callSel(b.call, `data-bcall="${esc(b.id)}" onclick="event.stopPropagation()"`)}</span>` : ''}<span class="pill ${ST_CLS[b.status]}">${esc(b.status)}</span>${quickBtn(b)}</div>
       </div>`).join('')).join('') + '</div>';
 }
 
@@ -914,6 +929,7 @@ function bookingDrawer(keepScroll) {
     </div>
     <div class="db" id="db">
       ${statusBtns}
+      ${dr.isNew ? '' : `<div class="bcallrow"><span>Звонок гостю</span>${callSel(dr.orig.call, `data-bcall="${esc(b.id)}"`)}</div>`}
       ${dr.isNew ? '' : `<div class="tginfo">✈️ ${b.tg ? '@' + esc(b.tg) : 'username не указан'} · ${dr.orig.tgConnected ? '<b>бот подключён</b>' : 'бот не подключён' +
         (dr.orig.tgLink ? ' · <button data-act="copylink">скопировать ссылку для гостя</button>' : '')}
         ${dr.orig.reminded ? `<br>Напоминание отправлено ${esc(dr.orig.reminded.slice(11))} ${esc(dateNum(dr.orig.reminded.slice(0, 10)))} · ответ: <b>${esc(dr.orig.answer === 'Запрошено' ? (isStarted(dr.orig) ? 'нет ответа' : 'ждём') : dr.orig.answer || '—')}</b>` : ''}
@@ -1042,6 +1058,8 @@ function save(force) {
     }
     toast(dr.isNew ? 'Бронь создана' : 'Сохранено', res.booking.time + ' · ' + res.booking.name);
     if (S.seen) S.seen.add(res.booking.id);
+    if (dr.fromWait) call('hostWait', 'booked', { id: dr.fromWait, booking: res.booking.id }).then(() => loadDay(true))
+      .catch(err => toast('Лист ожидания не обновился', err.message));
     closeDrawer();
     if (S.guestList) loadGuests();
     if (res.booking.date !== S.date) S.date = res.booking.date;
@@ -1126,42 +1144,66 @@ function guestDrawer() {
 function waiting() { return S.data && S.data.date === S.data.today ? (S.data.wait || []).filter(w => w.status === 'Ждёт') : []; }
 function waitMin(w) { return Math.max(0, S.data.now - mins(w.time)); }
 
+/** Отметка звонка: «Дозвонились · 14:05» → выпадающий список с цветом и временем. */
+const CALLS = [['', 'Не звонили'], ['Не дозвонились', 'Не дозвонились'], ['Дозвонились', 'Дозвонились'], ['Пригласили', 'Пригласили'], ['Перезвонить', 'Перезвонить']];
+const CALL_CLS = { 'Не дозвонились': 'c-no', 'Дозвонились': 'c-ok', 'Пригласили': 'c-inv', 'Перезвонить': 'c-again' };
+function callSel(mark, attr) {
+  const [cur, at] = String(mark || '').split(' · ');
+  return `<select class="callsel ${CALL_CLS[cur] || ''}" ${attr} title="Отметка звонка — видна всем хостес">${CALLS.map(([v, l]) =>
+    `<option value="${v}" ${v === (cur || '') ? 'selected' : ''}>📞 ${l}</option>`).join('')}</select>${at ? `<span class="calltime">отметили в ${esc(at)}</span>` : ''}`;
+}
+
 function renderWait() {
-  const d = S.data, today = d.date === d.today;
+  const d = S.data, today = d.date === d.today, future = d.date > d.today;
   const all = d.wait || [];
   const q = S.q.trim().toLowerCase(), qd = q.replace(/\D/g, '');
   const match = w => !q || String(w.name).toLowerCase().includes(q) || (qd && String(w.phone).includes(qd));
   const wait = all.filter(w => w.status === 'Ждёт' && match(w));
+  if (future) wait.sort((a, b) => (a.want ? mins(a.want) : 9999) - (b.want ? mins(b.want) : 9999));
   const rest = all.filter(w => w.status !== 'Ждёт' && match(w));
-  const f = S.waitForm || (S.waitForm = { name: '', guests: 2, phone: '', comment: '' });
+  const f = S.waitForm || (S.waitForm = { name: '', guests: 2, phone: '', comment: '', want: '' });
+  const pend = w => waitPending(w.id) || w.saving;
   const row = (w, i) => {
     const on = w.status === 'Ждёт';
     const m = on && today ? waitMin(w) : null;
+    const dis = pend(w) ? 'disabled' : '';
     return `<div class="wrow ${on ? '' : 'off'}">
       <div class="no">${on ? i + 1 : '·'}</div>
       <div class="nm"><b>${esc(w.name)}</b>${w.phone ? `<a href="tel:+${esc(String(w.phone).replace(/\D/g, ''))}">${esc(fmtPhone(w.phone))}</a>` : '<span>без телефона</span>'}</div>
       <div class="m"><b>${w.guests}</b> ${plural(w.guests, 'гость', 'гостя', 'гостей')}</div>
-      <div class="wt ${m !== null && m >= 30 ? 'long' : ''}">${on ? (m !== null ? `ждёт <b>${m}</b> мин` : '') + `<div style="font-size:11px;color:var(--muted)">с ${esc(w.time)}</div>`
+      <div class="wt ${m !== null && m >= 30 ? 'long' : ''}">${on ? (today ? (m !== null ? `ждёт <b>${m}</b> мин` : '') + `<div style="font-size:11px;color:var(--muted)">с ${esc(w.time)}</div>`
+          : `${w.want ? `хочет на <b>${esc(w.want)}</b>` : 'время любое'}`)
         : w.status === 'Посажен' ? `<span class="pill st-in">стол ${esc(w.table)}</span><div style="font-size:11px;color:var(--muted)">в ${esc(w.seatedAt)}, ждал ${Math.max(0, mins(w.seatedAt) - mins(w.time))} мин</div>`
-        : `<span class="pill st-cancel">ушёл</span>`}</div>
-      <div class="tags">${esc(w.comment || '')}</div>
+        : w.status === 'Забронирован' ? `<span class="pill st-ok">бронь ${esc(w.seatedAt)}</span>`
+        : `<span class="pill st-cancel">${today ? 'ушёл' : 'не нужно'}</span>`}</div>
+      <div class="tags">${w.saving ? esc(w.comment || '') : `<input class="wnote" data-wcomment="${esc(w.id)}" value="${esc(w.comment || '')}" placeholder="комментарий: перезвонить в 19:00…" maxlength="200" ${dis}>`}</div>
+      <div class="wc">${w.saving ? '' : callSel(w.call, `data-wcall="${esc(w.id)}" ${dis}`)}</div>
       <div class="qa">${w.saving ? '<span style="color:var(--muted);font-size:13px">сохраняем…</span>'
-        : on && today ? `<button class="btn sm" data-wpick="${esc(w.id)}" ${waitPending(w.id) ? 'disabled' : ''}>${waitPending(w.id) ? 'Сажаем…' : 'Выбрать стол'}</button><button class="btn ghost sm" data-wop="gone" data-wid="${esc(w.id)}" ${waitPending(w.id) ? 'disabled' : ''}>Ушёл</button>`
-        : w.status === 'Ушёл' && today ? `<button class="btn ghost sm" data-wop="back" data-wid="${esc(w.id)}" ${waitPending(w.id) ? 'disabled' : ''}>Вернуть в очередь</button>`
-        : w.status === 'Посажен' && w.booking ? `<button class="btn ghost sm" data-id="${esc(w.booking)}">Бронь</button>` : ''}</div>
+        : on && today ? `<button class="btn sm" data-wpick="${esc(w.id)}" ${dis}>${waitPending(w.id) ? 'Сажаем…' : 'Выбрать стол'}</button><button class="btn ghost sm" data-wop="gone" data-wid="${esc(w.id)}" ${dis}>Ушёл</button>`
+        : on && future ? `<button class="btn sm" data-wbook="${esc(w.id)}" ${dis}>Оформить бронь</button><button class="btn ghost sm" data-wop="gone" data-wid="${esc(w.id)}" ${dis}>Не нужно</button>`
+        : w.status === 'Ушёл' && !(d.date < d.today) ? `<button class="btn ghost sm" data-wop="back" data-wid="${esc(w.id)}" ${dis}>Вернуть в очередь</button>`
+        : (w.status === 'Посажен' || w.status === 'Забронирован') && w.booking ? `<button class="btn ghost sm" data-id="${esc(w.booking)}">Бронь</button>` : ''}</div>
     </div>`;
   };
+  const wantOpts = () => {
+    const a = d.hours ? d.hours.open : 8 * 60, z = d.hours ? d.hours.close : 23 * 60, out = ['<option value="">любое</option>'];
+    for (let t = a; t < z; t += 30) out.push(`<option value="${hm(t)}" ${f.want === hm(t) ? 'selected' : ''}>${hm(t)}</option>`);
+    return out.join('');
+  };
   $('#view').innerHTML = `<div class="list">
-    ${today ? `<form class="wadd" id="wadd" autocomplete="off">
+    ${today || future ? `<form class="wadd ${future ? 'fut' : ''}" id="wadd" autocomplete="off">
       <label class="fld"><span>Имя</span><input id="w-name" value="${esc(f.name)}" placeholder="Как зовут гостя"></label>
       <label class="fld"><span>Гостей</span><input id="w-guests" type="number" min="1" max="50" value="${f.guests}"></label>
-      <label class="fld"><span>Телефон</span><input id="w-phone" type="tel" inputmode="tel" value="${esc(f.phone)}" placeholder="+7 …"></label>
-      <label class="fld"><span>Комментарий</span><input id="w-comment" value="${esc(f.comment)}" placeholder="у окна, с коляской…"></label>
-      <button class="btn wide" type="submit">В лист ожидания</button>
-    </form>` : `<div class="daynote" style="margin:0">Лист ожидания ведётся на сегодня. Здесь — как было в этот день.</div>`}
+      <label class="fld"><span>Телефон${future ? ' *' : ''}</span><input id="w-phone" type="tel" inputmode="tel" value="${esc(f.phone)}" placeholder="+7 …"></label>
+      ${future ? `<label class="fld"><span>Хочет на</span><select id="w-want">${wantOpts()}</select></label>` : ''}
+      <label class="fld"><span>Комментарий</span><input id="w-comment" value="${esc(f.comment)}" placeholder="${future ? 'у окна, на день рождения…' : 'у окна, с коляской…'}"></label>
+      <button class="btn wide" type="submit">В лист ожидания${future ? ' на ' + esc(dateNum(d.date)) : ''}</button>
+    </form>
+    ${future ? `<div style="font-size:12.5px;color:var(--muted);margin:-4px 2px 4px">Лист ожидания на ${esc(dateLong(d.date))}: гости, которым не хватило места. Освободилось — звоните по очереди, отмечайте звонок и нажимайте «Оформить бронь».</div>` : ''}`
+      : `<div class="daynote" style="margin:0">Этот день прошёл. Здесь — как было в листе ожидания.</div>`}
     <div class="lgroup">Ждут · ${wait.length}</div>
-    ${wait.length ? wait.map(row).join('') : `<div style="color:var(--muted);padding:6px 4px 10px">${today ? 'Очереди нет. Добавьте гостя формой выше.' : 'Никто не ждал.'}</div>`}
-    ${rest.length ? `<div class="lgroup">Посажены и ушли · ${rest.length}</div>` + rest.map(row).join('') : ''}
+    ${wait.length ? wait.map(row).join('') : `<div style="color:var(--muted);padding:6px 4px 10px">${today ? 'Очереди нет. Добавьте гостя формой выше.' : future ? 'На этот день пока никто не ждёт.' : 'Никто не ждал.'}</div>`}
+    ${rest.length ? `<div class="lgroup">${future ? 'Забронированы и отказались' : 'Посажены и ушли'} · ${rest.length}</div>` + rest.map(row).join('') : ''}
   </div>`;
 }
 
@@ -1215,21 +1257,31 @@ function waitDrawer() {
  *  с гостем, его кнопки неактивны, а с другими гостями можно работать сразу (сажать несколько человек подряд).
  *  Добавление, «ушёл» и «вернуть» видны сразу, не дожидаясь сервера; при ошибке — откат. */
 let tmpN = 0;
-function waitKey(op, data) { return op === 'add' ? 'add:' + [data.name.toLowerCase(), data.phone.replace(/\D/g, ''), data.guests].join('|') : 'id:' + data.id; }
+function waitKey(op, data) {
+  if (op === 'add') return 'add:' + [data.name.toLowerCase(), data.phone.replace(/\D/g, ''), data.guests, data.date].join('|');
+  if (op === 'call' || op === 'comment') return op + ':' + data.id; // отметка и комментарий не блокируют кнопки гостя
+  return 'id:' + data.id;
+}
 function waitPending(id) { return S.waitOps.has('id:' + id); }
 function waitOp(op, data, force) {
   const k = waitKey(op, data);
   if (S.waitOps.has(k) && !force) return Promise.resolve(null); // то же действие уже отправлено
   S.waitOps.add(k);
   if (op === 'seat') tids(data.table).forEach(id => S.seatTables.add(id));
+  const opDate = S.data.date;
   const tmp = op === 'add' ? 'tmp' + (++tmpN) : '';
+  const old = (S.data.wait || []).find(w => w.id === data.id);
+  const patch = (w, p) => S.data.wait = (S.data.wait || []).map(x => x.id === w ? Object.assign({}, x, p) : x);
   const undo = () => {
+    if (S.data.date !== opDate) return;
     if (op === 'add') S.data.wait = (S.data.wait || []).filter(w => w.id !== tmp);
-    if (op === 'gone' || op === 'back') S.data.wait = (S.data.wait || []).map(w => w.id === data.id ? Object.assign({}, w, { status: op === 'gone' ? 'Ждёт' : 'Ушёл' }) : w);
+    else if (old && ['gone', 'back', 'call', 'comment'].includes(op)) patch(data.id, { status: old.status, call: old.call, comment: old.comment });
   };
   if (op === 'add') S.data.wait = (S.data.wait || []).concat([{ id: tmp, date: S.data.date, time: hm(S.data.now), name: data.name, phone: data.phone.replace(/\D/g, ''),
-    guests: data.guests, comment: data.comment, status: 'Ждёт', saving: true }]);
-  if (op === 'gone' || op === 'back') S.data.wait = (S.data.wait || []).map(w => w.id === data.id ? Object.assign({}, w, { status: op === 'gone' ? 'Ушёл' : 'Ждёт' }) : w);
+    guests: data.guests, comment: data.comment, want: data.want || '', status: 'Ждёт', saving: true }]);
+  if (op === 'gone' || op === 'back') patch(data.id, { status: op === 'gone' ? 'Ушёл' : 'Ждёт' });
+  if (op === 'call') patch(data.id, { call: data.call ? data.call + ' · ' + hm(S.data.date === S.data.today ? S.data.now : new Date().getHours() * 60 + new Date().getMinutes()) : '' });
+  if (op === 'comment') patch(data.id, { comment: data.comment });
   renderAll();
   const done = () => {
     S.waitOps.delete(k);
@@ -1243,7 +1295,8 @@ function waitOp(op, data, force) {
       return res;
     }
     // другие действия ещё в пути — список с сервера может их не содержать: оставляем свой, сверим после последнего
-    if (!S.waitOps.size) S.data.wait = res.wait;
+    if (S.data.date !== opDate) { /* хостес уже смотрит другой день */ }
+    else if (!S.waitOps.size) S.data.wait = res.wait;
     else if (op === 'add') S.data.wait = S.data.wait.map(w => w.id === tmp ? Object.assign({}, w, { saving: false, id: 'saved' + tmp }) : w);
     if (res.booking) {
       if (S.seen) S.seen.add(res.booking.id);
@@ -1252,16 +1305,48 @@ function waitOp(op, data, force) {
       if (S.drawer && S.drawer.kind === 'wait' && S.drawer.w.id === data.id) closeDrawer();
     }
     if (!S.waitOps.size && (res.booking || op === 'add')) loadDay(true);
-    renderAll();
+    // комментарий не перерисовываем, пока хостес печатает в соседнем поле
+    if (!(document.activeElement && document.activeElement.classList && document.activeElement.classList.contains('wnote'))) renderAll();
     return res;
   }).catch(err => { done(); undo(); renderAll(); toast('Не получилось', (op === 'add' ? data.name + ': ' : '') + err.message); return null; });
+}
+
+/** Отметка звонка по брони: видна сразу, сохраняется в фоне. */
+function bookCall(id, callVal) {
+  const b = S.data.bookings.find(x => x.id === id);
+  if (!b || S.stBusy.has('call:' + id)) return;
+  const prev = b.call;
+  b.call = callVal ? callVal + ' · ' + hm(new Date().getHours() * 60 + new Date().getMinutes()) : '';
+  S.stBusy.add('call:' + id);
+  renderAll();
+  if (S.drawer && S.drawer.kind === 'booking' && S.drawer.b.id === id) { S.drawer.orig.call = b.call; renderDrawer(true); }
+  call('hostCall', id, callVal).then(nb => {
+    S.stBusy.delete('call:' + id);
+    const i = S.data.bookings.findIndex(x => x.id === nb.id);
+    if (i >= 0) S.data.bookings[i] = nb;
+    if (S.drawer && S.drawer.kind === 'booking' && S.drawer.b.id === id) { S.drawer.orig.call = nb.call; S.drawer.b.call = nb.call; renderDrawer(true); }
+    renderAll();
+  }).catch(err => { S.stBusy.delete('call:' + id); b.call = prev; renderAll(); toast('Отметка не сохранилась', err.message); });
+}
+
+/** «Оформить бронь» из листа ожидания на другой день: форма брони с данными гостя, после сохранения запись станет «Забронирован». */
+function bookFromWait(id) {
+  const w = (S.data.wait || []).find(x => x.id === id);
+  if (!w) return;
+  const preset = { name: w.name, phone: w.phone || '', guests: w.guests, hostNote: w.comment || '' };
+  if (w.want) preset.start = mins(w.want);
+  newBooking(preset);
+  S.drawer.fromWait = id;
+  if (w.phone) loadGuest(w.phone);
 }
 
 document.addEventListener('submit', e => {
   if (e.target.id !== 'wadd') return;
   e.preventDefault();
-  const f = { name: $('#w-name').value.trim(), guests: Number($('#w-guests').value) || 1, phone: $('#w-phone').value.trim(), comment: $('#w-comment').value.trim() };
+  const f = { name: $('#w-name').value.trim(), guests: Number($('#w-guests').value) || 1, phone: $('#w-phone').value.trim(), comment: $('#w-comment').value.trim(),
+    date: S.data.date, want: $('#w-want') ? $('#w-want').value : '' };
   if (!f.name) { toast('Укажите имя гостя'); $('#w-name').focus(); return; }
+  if (f.date !== S.data.today && f.phone.replace(/\D/g, '').length < 10) { toast('Нужен телефон', 'Без телефона гостю на другой день не перезвонить'); $('#w-phone').focus(); return; }
   S.waitForm = null; // форма очищается сразу; если не сохранится — вернём введённое
   waitOp('add', f).then(res => {
     if (res && res.wait) toast('В листе ожидания', f.name + ', ' + f.guests + ' гост.');
@@ -1325,6 +1410,8 @@ document.addEventListener('click', e => {
   if (sd) { e.stopPropagation(); if (confirm('Снова открыть это время для онлайн-брони?')) stopOp('del', { id: sd.dataset.stopdel }).then(() => { if (S.drawer && S.drawer.kind === 'stop') renderDrawer(true); }); return; }
   const wp = t.closest('[data-wpick]');
   if (wp) { openWaitPick(wp.dataset.wpick); return; }
+  const wb = t.closest('[data-wbook]');
+  if (wb) { bookFromWait(wb.dataset.wbook); return; }
   const wo = t.closest('[data-wop]');
   if (wo) {
     const w = (S.data.wait || []).find(x => x.id === wo.dataset.wid);
@@ -1477,6 +1564,12 @@ document.addEventListener('input', e => {
 });
 document.addEventListener('change', e => {
   const id = e.target.id;
+  const wc = e.target.dataset && e.target.dataset.wcall;
+  if (wc) { waitOp('call', { id: wc, call: e.target.value }); return; }
+  const wn = e.target.dataset && e.target.dataset.wcomment;
+  if (wn) { const w = (S.data.wait || []).find(x => x.id === wn); if (w && (w.comment || '') !== e.target.value.trim()) waitOp('comment', { id: wn, comment: e.target.value.trim() }); return; }
+  const bc = e.target.dataset && e.target.dataset.bcall;
+  if (bc) { bookCall(bc, e.target.value); return; }
   if (id === 'dInput' && e.target.value) { S.date = e.target.value; loadDay(); }
   if (id === 'showCancel') { S.showCancel = e.target.checked; store.set('showCancel', S.showCancel); renderAll(); }
   if (S.drawer && S.drawer.kind === 'booking' && ['e-time', 'e-dur', 'e-date', 'e-guests', 'e-table'].includes(id)) { readForm(); renderDrawer(true); }
@@ -1492,7 +1585,7 @@ document.addEventListener('keydown', e => {
 
 // данные дня обновляются раз в 30 секунд; новые брони с сайта — звук и уведомление
 setInterval(() => {
-  const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('#wadd'); // не сбивать ввод в листе ожидания
+  const typing = document.activeElement && document.activeElement.closest && document.activeElement.closest('#wadd, .wnote'); // не сбивать ввод в листе ожидания
   if (!document.hidden && !(S.drawer && S.drawer.saving) && !typing && !S.waitOps.size && !S.stBusy.size) loadDay(true);
 }, 30000);
 document.addEventListener('visibilitychange', () => { if (!document.hidden && S.data) loadDay(true); });
